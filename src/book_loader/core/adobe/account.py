@@ -53,11 +53,13 @@ class AdobeAccount:
         try:
             tree = etree.parse(str(self.activation_xml))
             root = tree.getroot()
-            # Find <credentials method="...">
-            credentials = root.find(".//{http://ns.adobe.com/adept}credentials")
-            if credentials is not None:
-                method = credentials.get("method", "anonymous")
-                return method
+            # Find <username method="..."> element (Adobe ID stores method here)
+            username = root.find(".//{http://ns.adobe.com/adept}username")
+            if username is not None:
+                method = username.get("method")
+                if method:
+                    return method
+            # Fallback to anonymous if no method attribute found
             return "anonymous"
         except Exception:
             return "unknown"
