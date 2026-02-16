@@ -61,7 +61,8 @@ class BookLoader:
         self.drm_remover.remove_drm(encrypted_path, decrypted_path, user_key)
         print(f"✓ DRM removed: {decrypted_path.name}")
 
-        # Clean up encrypted file
+        # Clean up encrypted file if not keeping intermediate files
+        # Note: keep_encrypted controls deletion of both encrypted source and intermediate files
         if not keep_encrypted:
             encrypted_path.unlink()
             # Clean up temporary directory
@@ -86,7 +87,8 @@ class BookLoader:
                 engine = ConversionEngine(engine=convert_engine)
                 engine.convert_epub_to_pdf(current_path, pdf_path)
 
-                # If EPUB retention not needed, delete it
+                # Delete intermediate decrypted EPUB after PDF conversion (controlled by keep_encrypted flag)
+                # Note: current_path here is the decrypted EPUB, not the encrypted file
                 if not keep_encrypted:
                     current_path.unlink()
 

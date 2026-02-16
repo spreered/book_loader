@@ -11,3 +11,10 @@ wheels/
 
 # Claude Code
 .claude/
+
+# Adobe authorization files (contain private keys and device credentials)
+activation.xml
+activation.dat
+device.xml
+devicesalt
+*.der

@@ -5,13 +5,22 @@ Command-line interface.
 import sys
 import click
 from pathlib import Path
+from importlib.metadata import version, PackageNotFoundError
 from .core.workflow import BookLoader
 from .utils.config import Config
 from .utils.errors import BookLoaderError
 
 
+def get_version() -> str:
+    """Get package version from metadata."""
+    try:
+        return version("book-loader")
+    except PackageNotFoundError:
+        return "0.1.0"  # Fallback for development
+
+
 @click.group()
-@click.version_option(version="0.1.0")
+@click.version_option(version=get_version())
 def cli():
     """book-loader - Adobe ACSM ebook DRM removal tool
 
@@ -248,7 +257,7 @@ def info():
         loader = BookLoader(config)
 
         click.echo("=== Book Loader System Information ===\n")
-        click.echo(f"Version: 0.1.0")
+        click.echo(f"Version: {get_version()}")
         click.echo(f"Authorization directory: {config.auth_dir}")
 
         if loader.account.is_authorized():
@@ -258,8 +267,13 @@ def info():
         else:
             click.secho(f"Authorization status: Not authorized", fg="yellow")
 
-        # TODO: Check if Calibre is available
-        click.echo(f"Calibre: Not yet implemented")
+        # Check if Calibre is available
+        from .core.conversion.calibre_wrapper import CalibreConverter
+        calibre = CalibreConverter()
+        if calibre.is_available():
+            click.secho(f"Calibre: Available ✓", fg="green")
+        else:
+            click.echo(f"Calibre: Not installed")
 
     except Exception as e:
         click.secho(f"✗ Error: {e}", fg="red", err=True)

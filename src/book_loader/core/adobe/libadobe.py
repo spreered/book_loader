@@ -153,6 +153,10 @@ def createDeviceKeyFile():
     f.write(devkey_bytes)
     f.close()
 
+    # Set restrictive permissions (owner read/write only) for security
+    import os
+    os.chmod(FILE_DEVICEKEY, 0o600)
+
 def int_to_bytes(value, length, big_endian = True):
     # Helper function for Python2 only (big endian)
     # Python3 uses int.to_bytes()
@@ -284,8 +288,8 @@ def sendHTTPRequest_DL2FILE(URL, outputfile):
     except:
         pass
 
-    if loc is not None: 
-        return sendHTTPRequest_DL2FILE(loc)
+    if loc is not None:
+        return sendHTTPRequest_DL2FILE(loc, outputfile)
 
     if ret_code != 200:
         return ret_code

@@ -31,5 +31,7 @@ class Config:
             return Path(env_dir)
 
         config_dir = Path.home() / ".config" / "book-loader" / ".adobe"
-        config_dir.mkdir(parents=True, exist_ok=True)
+        config_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        # Ensure restrictive permissions even if directory already existed
+        config_dir.chmod(0o700)
         return config_dir

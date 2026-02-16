@@ -142,6 +142,6 @@ class AdobeAccount:
 
     def reset(self) -> None:
         """Reset authorization (delete all authorization files)."""
-        for file in [self.activation_xml, self.device_xml, self.devicesalt]:
+        for file in [self.activation_xml, self.activation_dat, self.device_xml, self.devicesalt]:
             if file.exists():
                 file.unlink()
