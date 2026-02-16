@@ -64,6 +64,27 @@ class AdobeAccount:
         except Exception:
             return "unknown"
 
+    def get_adobe_id_email(self) -> str:
+        """
+        Get Adobe ID email address.
+
+        Returns:
+            Email address if using Adobe ID, empty string otherwise
+        """
+        if not self.is_authorized():
+            return ""
+
+        try:
+            tree = etree.parse(str(self.activation_xml))
+            root = tree.getroot()
+            # Find <username method="...">email</username>
+            username = root.find(".//{http://ns.adobe.com/adept}username")
+            if username is not None and username.get("method") == "AdobeID":
+                return username.text or ""
+            return ""
+        except Exception:
+            return ""
+
     def authorize_anonymous(self) -> None:
         """Execute anonymous authorization (default method)."""
         try:

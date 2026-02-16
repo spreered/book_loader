@@ -169,6 +169,12 @@ def auth_info():
 
             click.secho(f"Authorization status: Authorized ✓", fg="green")
             click.echo(f"Authorization type: {auth_type_display}")
+
+            # Show Adobe ID email if applicable
+            if auth_type == "AdobeID":
+                email = loader.account.get_adobe_id_email()
+                if email:
+                    click.echo(f"Adobe ID: {email}")
         else:
             click.secho(f"Authorization status: Not authorized", fg="yellow")
             click.echo("\nHint: Run 'book-loader auth create' to create authorization")
