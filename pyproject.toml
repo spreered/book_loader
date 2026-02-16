@@ -4,6 +4,24 @@ version = "0.1.0"
 description = "Adobe ACSM ebook DRM removal tool - Supports anonymous and Adobe ID authorization"
 readme = "README.md"
 requires-python = ">=3.10"
+license = {text = "GPL-3.0-or-later"}
+authors = [
+    {name = "spreered", email = "spreered@gmail.com"},
+]
+keywords = ["ebook", "drm", "acsm", "adobe", "epub", "pdf", "drm-removal"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Utilities",
+    "Environment :: Console",
+]
 dependencies = [
     # Adobe ACSM core dependencies
     "lxml>=4.9.0",
@@ -20,6 +38,11 @@ dependencies = [
     "Pillow>=10.0.0",
     "weasyprint>=60.0",  # EPUB → PDF conversion
 ]
+
+[project.urls]
+Homepage = "https://github.com/spreered/book_loader"
+Repository = "https://github.com/spreered/book_loader"
+Issues = "https://github.com/spreered/book_loader/issues"
 
 [project.optional-dependencies]
 dev = [
