@@ -4,6 +4,8 @@ Command-line interface.
 
 import sys
 import click
+import tarfile
+from datetime import datetime
 from pathlib import Path
 from importlib.metadata import version, PackageNotFoundError
 from .core.workflow import BookLoader
@@ -17,6 +19,53 @@ def get_version() -> str:
         return version("book-loader")
     except PackageNotFoundError:
         return "0.1.0"  # Fallback for development
+
+
+def backup_auth(auth_dir: Path, backup_path: Path) -> Path:
+    """
+    Backup authorization files to a tar.gz archive.
+
+    Args:
+        auth_dir: Authorization directory to backup
+        backup_path: Target backup file path
+
+    Returns:
+        Path to the created backup file
+    """
+    backup_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with tarfile.open(backup_path, "w:gz") as tar:
+        tar.add(auth_dir, arcname=auth_dir.name)
+
+    return backup_path
+
+
+def list_backups(backup_dir: Path) -> list[Path]:
+    """List all backup files in the backup directory, sorted by modification time (newest first)."""
+    if not backup_dir.exists():
+        return []
+
+    backups = list(backup_dir.glob("*.tar.gz"))
+    backups.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    return backups
+
+
+def restore_auth(backup_file: Path, auth_dir: Path):
+    """
+    Restore authorization files from a tar.gz archive.
+
+    Args:
+        backup_file: Backup file path
+        auth_dir: Target authorization directory
+    """
+    # Remove existing auth directory if it exists
+    if auth_dir.exists():
+        import shutil
+        shutil.rmtree(auth_dir)
+
+    # Extract backup
+    with tarfile.open(backup_file, "r:gz") as tar:
+        tar.extractall(auth_dir.parent)
 
 
 @click.group()
@@ -189,6 +238,8 @@ def auth_info():
 def reset_auth():
     """Reset authorization (delete authorization files)
 
+    Before resetting, a backup will be automatically created.
+
     Examples:
 
         book-loader auth reset
@@ -197,11 +248,169 @@ def reset_auth():
         config = Config()
         loader = BookLoader(config)
 
+        # Auto-backup before reset
+        if loader.account.is_authorized():
+            default_backup_dir = Path.home() / "adobe-ade-auth-bk"
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_filename = f"auth_backup_{timestamp}.tar.gz"
+            backup_path = default_backup_dir / backup_filename
+
+            click.echo(f"Creating backup before reset: {backup_path}")
+            backup_auth(config.auth_dir, backup_path)
+            click.secho(f"✓ Backup created: {backup_path}", fg="green")
+
         loader.account.reset()
         click.secho("✓ Authorization reset", fg="green", bold=True)
 
     except Exception as e:
         click.secho(f"✗ Error: {e}", fg="red", err=True)
+        sys.exit(1)
+
+
+@auth.command("backup")
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(path_type=Path),
+    help="Backup directory path (default: ~/adobe-ade-auth-bk/)",
+)
+def backup_auth_cmd(output):
+    """Backup authorization to tar.gz archive
+
+    Examples:
+
+        book-loader auth backup
+
+        book-loader auth backup -o ~/my-backups/
+    """
+    try:
+        config = Config()
+        loader = BookLoader(config)
+
+        if not loader.account.is_authorized():
+            click.secho("✗ No authorization found to backup", fg="red", err=True)
+            sys.exit(1)
+
+        # Determine backup directory
+        default_backup_dir = Path.home() / "adobe-ade-auth-bk"
+        if output:
+            backup_dir = output
+        else:
+            backup_dir_input = click.prompt(
+                "Backup directory",
+                default=str(default_backup_dir),
+                type=str,
+            )
+            backup_dir = Path(backup_dir_input).expanduser()
+
+        # Generate backup filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        auth_type = loader.account.get_auth_type()
+        backup_filename = f"auth_{auth_type}_{timestamp}.tar.gz"
+        backup_path = backup_dir / backup_filename
+
+        # Create backup
+        click.echo(f"Backing up authorization to: {backup_path}")
+        backup_auth(config.auth_dir, backup_path)
+
+        click.secho(f"\n✓ Backup created successfully!", fg="green", bold=True)
+        click.echo(f"Backup file: {backup_path}")
+        click.echo(f"File size: {backup_path.stat().st_size / 1024:.1f} KB")
+
+    except Exception as e:
+        click.secho(f"✗ Backup failed: {e}", fg="red", err=True)
+        sys.exit(1)
+
+
+@auth.command("restore")
+@click.option(
+    "--file",
+    "backup_file",
+    type=click.Path(exists=True, path_type=Path),
+    help="Backup file to restore from",
+)
+@click.option(
+    "--backup-dir",
+    type=click.Path(path_type=Path),
+    help="Backup directory to search (default: ~/adobe-ade-auth-bk/)",
+)
+def restore_auth_cmd(backup_file, backup_dir):
+    """Restore authorization from backup
+
+    Examples:
+
+        book-loader auth restore
+
+        book-loader auth restore --file ~/backups/auth_backup.tar.gz
+
+        book-loader auth restore --backup-dir ~/my-backups/
+    """
+    try:
+        config = Config()
+        loader = BookLoader(config)
+
+        # Warn if existing authorization will be overwritten
+        if loader.account.is_authorized():
+            click.secho("⚠ Warning: Existing authorization will be overwritten", fg="yellow")
+            if not click.confirm("Continue?"):
+                click.echo("Restore cancelled")
+                return
+
+        # If --file is provided, use it directly
+        if backup_file:
+            selected_backup = backup_file
+        else:
+            # List available backups
+            default_backup_dir = Path.home() / "adobe-ade-auth-bk"
+            search_dir = Path(backup_dir).expanduser() if backup_dir else default_backup_dir
+
+            backups = list_backups(search_dir)
+
+            if not backups:
+                click.secho(f"✗ No backup files found in {search_dir}", fg="red", err=True)
+                click.echo("\nHint: Use '--file' to specify a backup file directly")
+                sys.exit(1)
+
+            # Display available backups
+            click.echo(f"\nAvailable backups in {search_dir}:\n")
+            for i, backup in enumerate(backups, 1):
+                size_kb = backup.stat().st_size / 1024
+                mtime = datetime.fromtimestamp(backup.stat().st_mtime)
+                click.echo(f"  {i}. {backup.name}")
+                click.echo(f"     Size: {size_kb:.1f} KB  |  Modified: {mtime.strftime('%Y-%m-%d %H:%M:%S')}")
+
+            # Let user select a backup
+            choice = click.prompt(
+                f"\nSelect backup to restore (1-{len(backups)})",
+                type=click.IntRange(1, len(backups)),
+            )
+            selected_backup = backups[choice - 1]
+
+        # Restore authorization
+        click.echo(f"\nRestoring authorization from: {selected_backup}")
+        restore_auth(selected_backup, config.auth_dir)
+
+        click.secho(f"\n✓ Authorization restored successfully!", fg="green", bold=True)
+        click.echo(f"Authorization directory: {config.auth_dir}")
+
+        # Display restored auth info
+        click.echo("\nRestored authorization info:")
+        loader = BookLoader(config)  # Reload to get new auth
+        if loader.account.is_authorized():
+            auth_type = loader.account.get_auth_type()
+            auth_type_display = {
+                "anonymous": "Anonymous",
+                "AdobeID": "Adobe ID",
+            }.get(auth_type, auth_type)
+            click.echo(f"  Type: {auth_type_display}")
+
+            if auth_type == "AdobeID":
+                email = loader.account.get_adobe_id_email()
+                if email:
+                    click.echo(f"  Adobe ID: {email}")
+
+    except Exception as e:
+        click.secho(f"✗ Restore failed: {e}", fg="red", err=True)
         sys.exit(1)
 
 
