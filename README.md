@@ -52,11 +52,11 @@ This project is developed for legitimate interoperability and personal backup pu
 
 ## Installation
 
-```bash
-# Using uv
-uv pip install -e .
+Requires Python 3.10 or later.
 
-# Or using pip
+```bash
+git clone https://github.com/spreered/book_loader.git
+cd book_loader
 pip install -e .
 ```
 

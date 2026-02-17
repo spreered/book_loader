@@ -52,11 +52,11 @@ Adobe ACSM 電子書 DRM 移除工具 - 支援匿名和 Adobe ID 授權
 
 ## 安裝
 
-```bash
-# 使用 uv
-uv pip install -e .
+需要 Python 3.10 以上版本。
 
-# 或使用 pip
+```bash
+git clone https://github.com/spreered/book_loader.git
+cd book_loader
 pip install -e .
 ```
 
