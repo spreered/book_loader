@@ -48,6 +48,7 @@ This project is developed for legitimate interoperability and personal backup pu
 - ✅ Support Adobe ID authorization (can be used on multiple devices)
 - ✅ No need to install Adobe Digital Editions
 - ✅ Pure Python implementation, cross-platform support
+- ✅ Backup and restore authorization (tar.gz archive)
 
 ## Installation
 
@@ -85,9 +86,30 @@ uv run book-loader auth create --adobe-id --email your@email.com
 # View authorization information
 uv run book-loader auth info
 
-# Reset authorization
+# Reset authorization (automatically creates a backup before deleting)
 uv run book-loader auth reset
 ```
+
+#### Backup and Restore Authorization
+
+```bash
+# Backup authorization (interactive prompt for destination, default: ~/adobe-ade-auth-bk/)
+uv run book-loader auth backup
+
+# Backup to a specific directory
+uv run book-loader auth backup -o ~/my-backups/
+
+# Restore authorization (interactive menu to select from available backups)
+uv run book-loader auth restore
+
+# Restore from a specific backup file
+uv run book-loader auth restore --file ~/adobe-ade-auth-bk/auth_AdobeID_20260217_004129.tar.gz
+
+# Restore from backups in a specific directory
+uv run book-loader auth restore --backup-dir ~/my-backups/
+```
+
+> **Note**: `auth reset` automatically creates a backup to `~/adobe-ade-auth-bk/` before deleting authorization files, so you can always restore if needed.
 
 #### Using Existing Authorization (Advanced)
 
@@ -210,15 +232,28 @@ book-loader process book2.acsm --auth-dir ~/auth-b/
 
 ### Q: How to backup authorization?
 
-Anonymous authorization requires backing up three files:
+Use the built-in backup command:
+
 ```bash
-# Default location: ~/.config/book-loader/.adobe/
-cp ~/.config/book-loader/.adobe/activation.xml ~/backup/
-cp ~/.config/book-loader/.adobe/device.xml ~/backup/
-cp ~/.config/book-loader/.adobe/devicesalt ~/backup/
+# Interactive backup (prompts for destination, default: ~/adobe-ade-auth-bk/)
+uv run book-loader auth backup
+
+# Backup to a specific directory
+uv run book-loader auth backup -o ~/my-backups/
 ```
 
-Adobe ID authorization syncs to Adobe servers, but it's still recommended to backup these files.
+The backup is saved as a `.tar.gz` archive with a timestamped filename (e.g., `auth_AdobeID_20260217_004129.tar.gz`).
+
+To restore, use:
+```bash
+# Interactive restore (lists available backups)
+uv run book-loader auth restore
+
+# Restore from a specific file
+uv run book-loader auth restore --file ~/adobe-ade-auth-bk/auth_AdobeID_20260217_004129.tar.gz
+```
+
+> **Note**: `auth reset` automatically creates a backup before deleting, so you won't accidentally lose your authorization.
 
 ### Q: Can I retry after processing fails?
 

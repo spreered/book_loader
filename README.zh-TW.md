@@ -48,6 +48,7 @@ Adobe ACSM 電子書 DRM 移除工具 - 支援匿名和 Adobe ID 授權
 - ✅ 支援 Adobe ID 授權（可在多台裝置使用）
 - ✅ 無需安裝 Adobe Digital Editions
 - ✅ 純 Python 實作，跨平台支援
+- ✅ 授權備份與還原（tar.gz 封存格式）
 
 ## 安裝
 
@@ -85,9 +86,30 @@ uv run book-loader auth create --adobe-id --email your@email.com
 # 檢視授權資訊
 uv run book-loader auth info
 
-# 重置授權
+# 重置授權（重置前會自動備份現有授權）
 uv run book-loader auth reset
 ```
+
+#### 備份與還原授權
+
+```bash
+# 備份授權（互動式提示目的地，預設：~/adobe-ade-auth-bk/）
+uv run book-loader auth backup
+
+# 備份到指定目錄
+uv run book-loader auth backup -o ~/my-backups/
+
+# 還原授權（互動式選單選擇備份）
+uv run book-loader auth restore
+
+# 從指定備份檔案還原
+uv run book-loader auth restore --file ~/adobe-ade-auth-bk/auth_AdobeID_20260217_004129.tar.gz
+
+# 從指定目錄搜尋備份並還原
+uv run book-loader auth restore --backup-dir ~/my-backups/
+```
+
+> **注意**：`auth reset` 在刪除授權前會自動備份到 `~/adobe-ade-auth-bk/`，不用擔心意外刪除授權。
 
 #### 使用現有授權（進階）
 
@@ -210,15 +232,28 @@ book-loader process book2.acsm --auth-dir ~/auth-b/
 
 ### Q: 如何備份授權？
 
-匿名授權需要備份三個檔案：
+使用內建的備份指令：
+
 ```bash
-# 預設位置：~/.config/book-loader/.adobe/
-cp ~/.config/book-loader/.adobe/activation.xml ~/backup/
-cp ~/.config/book-loader/.adobe/device.xml ~/backup/
-cp ~/.config/book-loader/.adobe/devicesalt ~/backup/
+# 互動式備份（提示輸入目的地，預設：~/adobe-ade-auth-bk/）
+uv run book-loader auth backup
+
+# 備份到指定目錄
+uv run book-loader auth backup -o ~/my-backups/
 ```
 
-Adobe ID 授權會同步到 Adobe 伺服器，但仍建議備份這些檔案。
+備份檔案會以帶有時間戳的 `.tar.gz` 封存格式儲存（例如：`auth_AdobeID_20260217_004129.tar.gz`）。
+
+還原方式：
+```bash
+# 互動式還原（列出可用備份供選擇）
+uv run book-loader auth restore
+
+# 從指定檔案還原
+uv run book-loader auth restore --file ~/adobe-ade-auth-bk/auth_AdobeID_20260217_004129.tar.gz
+```
+
+> **注意**：`auth reset` 在刪除前會自動建立備份，不用擔心意外遺失授權。
 
 ### Q: 處理失敗後可以重試嗎？
 
