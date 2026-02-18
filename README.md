@@ -2,6 +2,8 @@
 
 [English](README.md) | [繁體中文](README.zh-TW.md)
 
+![Book Loader](assets/book_loader.png)
+
 Adobe ACSM ebook DRM removal tool - Supports anonymous and Adobe ID authorization
 
 ---

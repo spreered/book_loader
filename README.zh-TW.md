@@ -2,6 +2,8 @@
 
 [English](README.md) | [繁體中文](README.zh-TW.md)
 
+![Book Loader](assets/book_loader.png)
+
 Adobe ACSM 電子書 DRM 移除工具 - 支援匿名和 Adobe ID 授權
 
 ---
