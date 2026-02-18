@@ -36,8 +36,14 @@ class KoboLibrary:
     Reads book metadata and encryption keys from the Kobo SQLite database.
     """
 
-    def __init__(self):
-        kobodir = Path.home() / "Library" / "Application Support" / "Kobo" / "Kobo Desktop Edition"
+    DEFAULT_KOBODIR = Path.home() / "Library" / "Application Support" / "Kobo" / "Kobo Desktop Edition"
+
+    def __init__(self, kobodir: Path | None = None):
+        if kobodir is not None:
+            kobodir = Path(kobodir).expanduser()
+        else:
+            kobodir = self.DEFAULT_KOBODIR
+
         if not kobodir.exists():
             raise KoboLibraryNotFoundError(
                 f"Kobo Desktop Edition directory not found: {kobodir}\n"

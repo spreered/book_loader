@@ -171,6 +171,16 @@ book-loader kobo dedrm --all -o ~/Books/
 
 輸出的 EPUB 檔名以書名命名（特殊字元替換為 `_`）。
 
+#### 自訂書庫路徑
+
+預設會在 `~/Library/Application Support/Kobo/Kobo Desktop Edition` 尋找 Kobo Desktop。使用 `--source` 可指定其他路徑：
+
+```bash
+# --source 放在 kobo 和子命令之間
+book-loader kobo --source /path/to/kobo list
+book-loader kobo --source /path/to/kobo dedrm --all -o ~/Books/
+```
+
 > **注意**：必須使用購買書本的帳號登入 Kobo Desktop。解密金鑰由本機 MAC 位址與 Kobo 帳號資訊推算而來，不需要網際網路連線。
 
 ### 系統資訊

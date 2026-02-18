@@ -171,6 +171,16 @@ book-loader kobo dedrm --all -o ~/Books/
 
 The output EPUB files are named after the book title (special characters replaced with `_`).
 
+#### Custom Library Path
+
+By default, the tool looks for Kobo Desktop at `~/Library/Application Support/Kobo/Kobo Desktop Edition`. Use `--source` to specify a different directory:
+
+```bash
+# --source goes between kobo and the subcommand
+book-loader kobo --source /path/to/kobo list
+book-loader kobo --source /path/to/kobo dedrm --all -o ~/Books/
+```
+
 > **Note**: You must be logged in to Kobo Desktop with the same account that purchased the books. The decryption key is derived from your local machine's MAC address and Kobo account credentials — no internet connection is required.
 
 ### System Information

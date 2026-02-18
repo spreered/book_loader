@@ -460,23 +460,33 @@ def convert(epub_file, output, convert_engine):
 
 
 @cli.group()
-def kobo():
+@click.option(
+    "--source",
+    type=click.Path(path_type=Path),
+    help="Kobo Desktop Edition directory (default: ~/Library/Application Support/Kobo/Kobo Desktop Edition)",
+)
+@click.pass_context
+def kobo(ctx, source):
     """Kobo Desktop Edition book management"""
-    pass
+    ctx.ensure_object(dict)
+    ctx.obj["kobo_source"] = source
 
 
 @kobo.command("list")
-def kobo_list():
+@click.pass_context
+def kobo_list(ctx):
     """List all books in Kobo Desktop library
 
     Examples:
 
         book-loader kobo list
+
+        book-loader kobo --source /path/to/kobo list
     """
     try:
         from .core.kobo import KoboLibrary
 
-        lib = KoboLibrary()
+        lib = KoboLibrary(kobodir=ctx.obj.get("kobo_source"))
         books = lib.books
 
         if not books:
@@ -516,7 +526,8 @@ def kobo_list():
     type=click.Path(path_type=Path),
     help="Output directory (default: current directory)",
 )
-def kobo_dedrm(all_books, output):
+@click.pass_context
+def kobo_dedrm(ctx, all_books, output):
     """Remove DRM from Kobo books
 
     Without --all: show interactive menu to select books.
@@ -529,11 +540,13 @@ def kobo_dedrm(all_books, output):
         book-loader kobo dedrm --all
 
         book-loader kobo dedrm -o ~/Books/
+
+        book-loader kobo --source /path/to/kobo dedrm --all -o ~/Books/
     """
     try:
         from .core.kobo import KoboLibrary, KoboDecryptor
 
-        lib = KoboLibrary()
+        lib = KoboLibrary(kobodir=ctx.obj.get("kobo_source"))
         books = lib.books
 
         if not books:
