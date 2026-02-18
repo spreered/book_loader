@@ -66,10 +66,10 @@ pip install -e .
 
 ```bash
 # Simplest way: process ACSM directly (will automatically create anonymous authorization)
-uv run book-loader process book.acsm
+book-loader process book.acsm
 
 # Specify output directory
-uv run book-loader process book.acsm -o ~/Books/
+book-loader process book.acsm -o ~/Books/
 ```
 
 ### Authorization Management
@@ -78,35 +78,35 @@ uv run book-loader process book.acsm -o ~/Books/
 
 ```bash
 # Method 1: Anonymous authorization (default, no Adobe account required)
-uv run book-loader auth create --anonymous
+book-loader auth create --anonymous
 
 # Method 2: Adobe ID authorization (can be used on up to 6 devices)
-uv run book-loader auth create --adobe-id --email your@email.com
+book-loader auth create --adobe-id --email your@email.com
 
 # View authorization information
-uv run book-loader auth info
+book-loader auth info
 
 # Reset authorization (automatically creates a backup before deleting)
-uv run book-loader auth reset
+book-loader auth reset
 ```
 
 #### Backup and Restore Authorization
 
 ```bash
 # Backup authorization (interactive prompt for destination, default: ~/adobe-ade-auth-bk/)
-uv run book-loader auth backup
+book-loader auth backup
 
 # Backup to a specific directory
-uv run book-loader auth backup -o ~/my-backups/
+book-loader auth backup -o ~/my-backups/
 
 # Restore authorization (interactive menu to select from available backups)
-uv run book-loader auth restore
+book-loader auth restore
 
 # Restore from a specific backup file
-uv run book-loader auth restore --file ~/adobe-ade-auth-bk/auth_AdobeID_20260217_004129.tar.gz
+book-loader auth restore --file ~/adobe-ade-auth-bk/auth_AdobeID_20260217_004129.tar.gz
 
 # Restore from backups in a specific directory
-uv run book-loader auth restore --backup-dir ~/my-backups/
+book-loader auth restore --backup-dir ~/my-backups/
 ```
 
 > **Note**: `auth reset` automatically creates a backup to `~/adobe-ade-auth-bk/` before deleting authorization files, so you can always restore if needed.
@@ -117,11 +117,11 @@ If you already have Adobe Digital Editions (ADE) authorization, you can use it d
 
 ```bash
 # Use ADE's authorization directory
-uv run book-loader process book.acsm \
+book-loader process book.acsm \
   --auth-dir ~/Library/Application\ Support/Adobe/Digital\ Editions/
 
 # Or use custom authorization directory
-uv run book-loader process book.acsm --auth-dir /path/to/auth/
+book-loader process book.acsm --auth-dir /path/to/auth/
 ```
 
 **Note**: ADE authorization directory may contain both anonymous and Adobe ID authorizations. The tool will prioritize:
@@ -132,7 +132,7 @@ uv run book-loader process book.acsm --auth-dir /path/to/auth/
 
 ```bash
 # Display system information
-uv run book-loader info
+book-loader info
 ```
 
 ## Important Concepts
@@ -236,10 +236,10 @@ Use the built-in backup command:
 
 ```bash
 # Interactive backup (prompts for destination, default: ~/adobe-ade-auth-bk/)
-uv run book-loader auth backup
+book-loader auth backup
 
 # Backup to a specific directory
-uv run book-loader auth backup -o ~/my-backups/
+book-loader auth backup -o ~/my-backups/
 ```
 
 The backup is saved as a `.tar.gz` archive with a timestamped filename (e.g., `auth_AdobeID_20260217_004129.tar.gz`).
@@ -247,10 +247,10 @@ The backup is saved as a `.tar.gz` archive with a timestamped filename (e.g., `a
 To restore, use:
 ```bash
 # Interactive restore (lists available backups)
-uv run book-loader auth restore
+book-loader auth restore
 
 # Restore from a specific file
-uv run book-loader auth restore --file ~/adobe-ade-auth-bk/auth_AdobeID_20260217_004129.tar.gz
+book-loader auth restore --file ~/adobe-ade-auth-bk/auth_AdobeID_20260217_004129.tar.gz
 ```
 
 > **Note**: `auth reset` automatically creates a backup before deleting, so you won't accidentally lose your authorization.
