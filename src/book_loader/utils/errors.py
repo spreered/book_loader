@@ -37,3 +37,15 @@ class WorkflowError(BookLoaderError):
     """Raised when workflow processing encounters an error."""
 
     pass
+
+
+class KoboLibraryNotFoundError(BookLoaderError):
+    """Raised when the Kobo Desktop Edition library or database cannot be found."""
+
+    pass
+
+
+class KoboDecryptionError(BookLoaderError):
+    """Raised when Kobo KEPUB decryption fails."""
+
+    pass

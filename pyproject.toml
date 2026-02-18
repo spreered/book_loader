@@ -29,14 +29,13 @@ dependencies = [
     "asn1crypto>=1.5.0",
     "pycryptodome>=3.18.0",
     "rsa>=4.9",
-
     # CLI interface
     "click>=8.1.0",
-
+    "questionary>=2.0",
     # EPUB processing and conversion
     "ebooklib>=0.18",
     "Pillow>=10.0.0",
-    "weasyprint>=60.0",  # EPUB → PDF conversion
+    "weasyprint>=60.0", # EPUB → PDF conversion
 ]
 
 [project.urls]

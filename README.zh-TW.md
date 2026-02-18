@@ -4,7 +4,7 @@
 
 ![Book Loader](assets/book_loader.png)
 
-Adobe ACSM 電子書 DRM 移除工具 - 支援匿名和 Adobe ID 授權
+Adobe ACSM 及 Kobo KEPUB 電子書 DRM 移除工具
 
 ---
 
@@ -45,12 +45,17 @@ Adobe ACSM 電子書 DRM 移除工具 - 支援匿名和 Adobe ID 授權
 
 ## 功能特色
 
+**Adobe ACSM**
 - ✅ 處理 ACSM 檔案，輸出無 DRM 的 EPUB/PDF
 - ✅ 支援匿名授權（無需 Adobe 帳號）
 - ✅ 支援 Adobe ID 授權（可在多台裝置使用）
 - ✅ 無需安裝 Adobe Digital Editions
-- ✅ 純 Python 實作，跨平台支援
 - ✅ 授權備份與還原（tar.gz 封存格式）
+
+**Kobo Desktop** *（macOS）*
+- ✅ 列出 Kobo Desktop 書庫中的所有書本
+- ✅ 移除 KEPUB 的 KDRM，輸出標準 EPUB
+- ✅ 互動式多選選單或一鍵解密所有書本
 
 ## 安裝
 
@@ -129,6 +134,44 @@ book-loader process book.acsm --auth-dir /path/to/auth/
 **注意**：ADE 授權目錄可能同時包含匿名和 Adobe ID 授權。工具會優先使用：
 - `activation.xml` + `device.xml` + `devicesalt`（舊格式授權）
 - `activation.dat`（ADE 4.5+ 格式）
+
+### Kobo DRM 移除（macOS）
+
+需先安裝 Kobo Desktop Edition 並完成書庫同步。
+
+#### 列出書本
+
+```bash
+book-loader kobo list
+```
+
+輸出範例：
+
+```
+Found 11 book(s) in Kobo library:
+
+#    Title                                            Author                       DRM
+----------------------------------------------------------------------------------------
+1    書名 A                                            作者名                        Protected
+2    書名 B                                            作者名                        Protected
+```
+
+#### 解密書本
+
+```bash
+# 互動式多選選單（空格選取，Enter 確認）
+book-loader kobo dedrm
+
+# 解密所有書本
+book-loader kobo dedrm --all
+
+# 解密所有書本到指定目錄
+book-loader kobo dedrm --all -o ~/Books/
+```
+
+輸出的 EPUB 檔名以書名命名（特殊字元替換為 `_`）。
+
+> **注意**：必須使用購買書本的帳號登入 Kobo Desktop。解密金鑰由本機 MAC 位址與 Kobo 帳號資訊推算而來，不需要網際網路連線。
 
 ### 系統資訊
 
@@ -270,7 +313,7 @@ GPLv3
 
 本專案整合了以下開源程式碼：
 - [acsm-calibre-plugin](https://github.com/Leseratte10/acsm-calibre-plugin) - GPLv3
-- [DeDRM_tools](https://github.com/noDRM/DeDRM_tools)
+- [DeDRM_tools](https://github.com/noDRM/DeDRM_tools)（含 Obok，用於 Kobo DRM 移除）
 
 ## 免責聲明
 

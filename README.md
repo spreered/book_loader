@@ -4,7 +4,7 @@
 
 ![Book Loader](assets/book_loader.png)
 
-Adobe ACSM ebook DRM removal tool - Supports anonymous and Adobe ID authorization
+Adobe ACSM & Kobo KEPUB ebook DRM removal tool
 
 ---
 
@@ -45,12 +45,17 @@ This project is developed for legitimate interoperability and personal backup pu
 
 ## Features
 
+**Adobe ACSM**
 - ✅ Process ACSM files, output DRM-free EPUB/PDF
 - ✅ Support anonymous authorization (no Adobe account required)
 - ✅ Support Adobe ID authorization (can be used on multiple devices)
 - ✅ No need to install Adobe Digital Editions
-- ✅ Pure Python implementation, cross-platform support
 - ✅ Backup and restore authorization (tar.gz archive)
+
+**Kobo Desktop** *(macOS)*
+- ✅ List all books in your Kobo Desktop library
+- ✅ Remove KDRM from KEPUB files, output standard EPUB
+- ✅ Interactive multi-select menu or batch decrypt all books
 
 ## Installation
 
@@ -129,6 +134,44 @@ book-loader process book.acsm --auth-dir /path/to/auth/
 **Note**: ADE authorization directory may contain both anonymous and Adobe ID authorizations. The tool will prioritize:
 - `activation.xml` + `device.xml` + `devicesalt` (old format authorization)
 - `activation.dat` (ADE 4.5+ format)
+
+### Kobo DRM Removal (macOS)
+
+Requires Kobo Desktop Edition to be installed and your library synced.
+
+#### List Books
+
+```bash
+book-loader kobo list
+```
+
+Example output:
+
+```
+Found 11 book(s) in Kobo library:
+
+#    Title                                            Author                       DRM
+----------------------------------------------------------------------------------------
+1    Book Title A                                     Author Name                  Protected
+2    Book Title B                                     Author Name                  Protected
+```
+
+#### Decrypt Books
+
+```bash
+# Interactive multi-select menu (Space to select, Enter to confirm)
+book-loader kobo dedrm
+
+# Decrypt all books
+book-loader kobo dedrm --all
+
+# Decrypt all books to a specific directory
+book-loader kobo dedrm --all -o ~/Books/
+```
+
+The output EPUB files are named after the book title (special characters replaced with `_`).
+
+> **Note**: You must be logged in to Kobo Desktop with the same account that purchased the books. The decryption key is derived from your local machine's MAC address and Kobo account credentials — no internet connection is required.
 
 ### System Information
 
@@ -270,7 +313,7 @@ GPLv3
 
 This project integrates the following open-source code:
 - [acsm-calibre-plugin](https://github.com/Leseratte10/acsm-calibre-plugin) - GPLv3
-- [DeDRM_tools](https://github.com/noDRM/DeDRM_tools)
+- [DeDRM_tools](https://github.com/noDRM/DeDRM_tools) (includes Obok for Kobo DRM removal)
 
 ## Disclaimer
 

@@ -459,6 +459,155 @@ def convert(epub_file, output, convert_engine):
         sys.exit(1)
 
 
+@cli.group()
+def kobo():
+    """Kobo Desktop Edition book management"""
+    pass
+
+
+@kobo.command("list")
+def kobo_list():
+    """List all books in Kobo Desktop library
+
+    Examples:
+
+        book-loader kobo list
+    """
+    try:
+        from .core.kobo import KoboLibrary
+
+        lib = KoboLibrary()
+        books = lib.books
+
+        if not books:
+            click.echo("No books found in Kobo library.")
+            lib.close()
+            return
+
+        click.echo(f"\nFound {len(books)} book(s) in Kobo library:\n")
+        click.echo(f"{'#':<4} {'Title':<48} {'Author':<28} DRM")
+        click.echo("-" * 88)
+
+        for i, book in enumerate(books, 1):
+            title = (book.title[:45] + "...") if len(book.title) > 48 else book.title
+            author = book.author or ""
+            author = (author[:25] + "...") if len(author) > 28 else author
+            if book.has_drm:
+                drm_label = click.style("Protected", fg="yellow")
+            else:
+                drm_label = click.style("DRM-free", fg="green")
+            click.echo(f"{i:<4} {title:<48} {author:<28} {drm_label}")
+
+        lib.close()
+
+    except BookLoaderError as e:
+        click.secho(f"\n✗ Error: {e}", fg="red", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.secho(f"\n✗ Unexpected error: {e}", fg="red", err=True)
+        sys.exit(1)
+
+
+@kobo.command("dedrm")
+@click.option("--all", "all_books", is_flag=True, help="Decrypt all books")
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(path_type=Path),
+    help="Output directory (default: current directory)",
+)
+def kobo_dedrm(all_books, output):
+    """Remove DRM from Kobo books
+
+    Without --all: show interactive menu to select books.
+    With --all: decrypt all books.
+
+    Examples:
+
+        book-loader kobo dedrm
+
+        book-loader kobo dedrm --all
+
+        book-loader kobo dedrm -o ~/Books/
+    """
+    try:
+        from .core.kobo import KoboLibrary, KoboDecryptor
+
+        lib = KoboLibrary()
+        books = lib.books
+
+        if not books:
+            click.echo("No books found in Kobo library.")
+            lib.close()
+            return
+
+        if all_books:
+            selected_books = books
+        else:
+            import questionary
+
+            choices = [
+                questionary.Choice(
+                    title="{title}{author} [{drm}]".format(
+                        title=book.title,
+                        author=f" ({book.author})" if book.author else "",
+                        drm="DRM" if book.has_drm else "Free",
+                    ),
+                    value=book,
+                )
+                for book in books
+            ]
+
+            selected_books = questionary.checkbox(
+                "Select books to decrypt (Space: select/deselect, Enter: confirm):",
+                choices=choices,
+            ).ask()
+
+            if not selected_books:
+                click.echo("No books selected.")
+                lib.close()
+                return
+
+        output_dir = output or Path.cwd()
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        decryptor = KoboDecryptor()
+        userkeys = lib.userkeys
+
+        success_count = 0
+        fail_count = 0
+
+        for book in selected_books:
+            click.echo(f"\nProcessing: {book.title}")
+            try:
+                if not book.filename.exists():
+                    click.secho(f"  ✗ Book file not found (not downloaded?): {book.filename}", fg="red")
+                    fail_count += 1
+                    continue
+
+                output_path = decryptor.decrypt_book(book, userkeys, output_dir)
+                click.secho(f"  ✓ Saved: {output_path}", fg="green")
+                success_count += 1
+            except BookLoaderError as e:
+                click.secho(f"  ✗ Failed: {e}", fg="red")
+                fail_count += 1
+
+        lib.close()
+
+        click.echo(f"\n--- Summary ---")
+        click.secho(f"Success: {success_count}", fg="green" if success_count > 0 else "white")
+        if fail_count > 0:
+            click.secho(f"Failed:  {fail_count}", fg="red")
+            sys.exit(1)
+
+    except BookLoaderError as e:
+        click.secho(f"\n✗ Error: {e}", fg="red", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.secho(f"\n✗ Unexpected error: {e}", fg="red", err=True)
+        sys.exit(1)
+
+
 @cli.command()
 def info():
     """Display system information
