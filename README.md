@@ -167,9 +167,25 @@ book-loader kobo dedrm --all
 
 # Decrypt all books to a specific directory
 book-loader kobo dedrm --all -o ~/Books/
+
+# Overwrite existing files without asking (non-interactive)
+book-loader kobo dedrm --all --overwrite -o ~/Books/
+
+# Skip existing files without asking (non-interactive)
+book-loader kobo dedrm --all --skip-existing -o ~/Books/
 ```
 
 The output EPUB files are named after the book title (special characters replaced with `_`).
+
+**File Conflict Handling:**
+- By default (interactive mode), you'll be prompted when a file already exists with options to:
+  - Overwrite this file
+  - Skip this file
+  - Overwrite all remaining (batch mode only)
+  - Skip all remaining (batch mode only)
+  - Cancel operation
+- Use `--overwrite` to automatically overwrite all existing files without prompting
+- Use `--skip-existing` to automatically skip all existing files without prompting
 
 #### Custom Library Path
 

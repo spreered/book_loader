@@ -6,11 +6,21 @@ import sys
 import click
 import tarfile
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
+from typing import Optional
 from importlib.metadata import version, PackageNotFoundError
 from .core.workflow import BookLoader
 from .utils.config import Config
 from .utils.errors import BookLoaderError
+
+
+class ConflictAction(Enum):
+    """File conflict resolution actions"""
+    OVERWRITE = "overwrite"
+    SKIP = "skip"
+    OVERWRITE_ALL = "overwrite_all"
+    SKIP_ALL = "skip_all"
 
 
 def get_version() -> str:
@@ -19,6 +29,61 @@ def get_version() -> str:
         return version("book-loader")
     except PackageNotFoundError:
         return "0.1.0"  # Fallback for development
+
+
+def _resolve_file_conflict(
+    output_path: Path,
+    book_title: str,
+    batch_mode: bool = False,
+    remembered_choice: Optional[ConflictAction] = None
+) -> ConflictAction:
+    """
+    Ask user how to handle an existing file.
+
+    Args:
+        output_path: Path to the existing output file
+        book_title: Book title (for display purposes)
+        batch_mode: Whether this is batch processing mode
+        remembered_choice: Previously remembered choice (overwrite_all/skip_all)
+
+    Returns:
+        ConflictAction indicating how to handle the file
+    """
+    # If we have a remembered choice, use it directly
+    if remembered_choice in (ConflictAction.OVERWRITE_ALL, ConflictAction.SKIP_ALL):
+        return remembered_choice
+
+    # File doesn't exist, proceed normally
+    if not output_path.exists():
+        return ConflictAction.OVERWRITE
+
+    # Show warning
+    click.secho(f"\n⚠ File already exists: {output_path.name}", fg="yellow")
+
+    if batch_mode:
+        # Batch mode: provide "apply to all" options
+        import questionary
+        choice = questionary.select(
+            f"How to handle '{book_title}'?",
+            choices=[
+                questionary.Choice("Overwrite this file", value="overwrite"),
+                questionary.Choice("Skip this file", value="skip"),
+                questionary.Choice("Overwrite all remaining", value="overwrite_all"),
+                questionary.Choice("Skip all remaining", value="skip_all"),
+                questionary.Choice("Cancel operation", value="cancel"),
+            ],
+        ).ask()
+
+        if choice == "cancel":
+            raise click.Abort()
+
+        return ConflictAction(choice)
+    else:
+        # Single file mode: simple yes/no prompt
+        if click.confirm("Overwrite?", default=False):
+            return ConflictAction.OVERWRITE
+        else:
+            return ConflictAction.SKIP
 
 
 def backup_auth(auth_dir: Path, backup_path: Path) -> Path:
@@ -526,8 +591,18 @@ def kobo_list(ctx):
     type=click.Path(path_type=Path),
     help="Output directory (default: current directory)",
 )
+@click.option(
+    "--overwrite",
+    is_flag=True,
+    help="Overwrite existing files without asking"
+)
+@click.option(
+    "--skip-existing", "skip_existing",
+    is_flag=True,
+    help="Skip books that already exist in output directory"
+)
 @click.pass_context
-def kobo_dedrm(ctx, all_books, output):
+def kobo_dedrm(ctx, all_books, output, overwrite, skip_existing):
     """Remove DRM from Kobo books
 
     Without --all: show interactive menu to select books.
@@ -542,9 +617,20 @@ def kobo_dedrm(ctx, all_books, output):
         book-loader kobo dedrm -o ~/Books/
 
         book-loader kobo --source /path/to/kobo dedrm --all -o ~/Books/
+
+        book-loader kobo dedrm --all --overwrite
+
+        book-loader kobo dedrm --all --skip-existing
     """
     try:
+        # Validate mutually exclusive options
+        if overwrite and skip_existing:
+            click.secho("✗ Error: --overwrite and --skip-existing cannot be used together",
+                        fg="red", err=True)
+            sys.exit(1)
+
         from .core.kobo import KoboLibrary, KoboDecryptor
+        from .core.kobo.decryptor import safe_filename
 
         lib = KoboLibrary(kobodir=ctx.obj.get("kobo_source"))
         books = lib.books
@@ -584,11 +670,21 @@ def kobo_dedrm(ctx, all_books, output):
         output_dir = output or Path.cwd()
         output_dir.mkdir(parents=True, exist_ok=True)
 
+        # Determine conflict resolution strategy
+        if overwrite:
+            conflict_strategy = ConflictAction.OVERWRITE_ALL
+        elif skip_existing:
+            conflict_strategy = ConflictAction.SKIP_ALL
+        else:
+            conflict_strategy = None  # Interactive mode
+
         decryptor = KoboDecryptor()
         userkeys = lib.userkeys
 
         success_count = 0
         fail_count = 0
+        skip_count = 0
+        remembered_choice = conflict_strategy
 
         for book in selected_books:
             click.echo(f"\nProcessing: {book.title}")
@@ -598,9 +694,35 @@ def kobo_dedrm(ctx, all_books, output):
                     fail_count += 1
                     continue
 
+                # Generate output path (same logic as decryptor)
+                output_path = output_dir / safe_filename(book.title)
+
+                # Resolve conflict
+                batch_mode = len(selected_books) > 1
+                action = _resolve_file_conflict(
+                    output_path,
+                    book.title,
+                    batch_mode=batch_mode,
+                    remembered_choice=remembered_choice
+                )
+
+                # Update remembered choice
+                if action in (ConflictAction.OVERWRITE_ALL, ConflictAction.SKIP_ALL):
+                    remembered_choice = action
+
+                # Handle skip
+                if action in (ConflictAction.SKIP, ConflictAction.SKIP_ALL):
+                    click.secho(f"  ⊘ Skipped (file exists)", fg="yellow")
+                    skip_count += 1
+                    continue
+
+                # Proceed with decryption
                 output_path = decryptor.decrypt_book(book, userkeys, output_dir)
                 click.secho(f"  ✓ Saved: {output_path}", fg="green")
                 success_count += 1
+            except click.Abort:
+                click.echo("\nOperation cancelled by user.")
+                break
             except BookLoaderError as e:
                 click.secho(f"  ✗ Failed: {e}", fg="red")
                 fail_count += 1
@@ -609,6 +731,8 @@ def kobo_dedrm(ctx, all_books, output):
 
         click.echo(f"\n--- Summary ---")
         click.secho(f"Success: {success_count}", fg="green" if success_count > 0 else "white")
+        if skip_count > 0:
+            click.secho(f"Skipped: {skip_count}", fg="yellow")
         if fail_count > 0:
             click.secho(f"Failed:  {fail_count}", fg="red")
             sys.exit(1)

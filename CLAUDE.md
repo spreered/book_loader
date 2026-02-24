@@ -134,7 +134,14 @@ book-loader auth restore [--file BACKUP_FILE]
 ### Kobo Desktop
 ```bash
 book-loader kobo [--source KOBO_DIR] list
-book-loader kobo [--source KOBO_DIR] dedrm [--all] [-o OUTPUT_DIR]
+book-loader kobo [--source KOBO_DIR] dedrm [--all] [-o OUTPUT_DIR] [--overwrite | --skip-existing]
 ```
+
+**Conflict Handling Options:**
+- `--overwrite` - Overwrite existing files without asking (non-interactive)
+- `--skip-existing` - Skip books that already exist in output directory (non-interactive)
+- Without either flag: interactive mode (prompts user on conflicts)
+  - Single file: simple yes/no prompt
+  - Batch mode: menu with options (overwrite/skip this/all/cancel)
 
 Default Kobo path: `~/Library/Application Support/Kobo/Kobo Desktop Edition`

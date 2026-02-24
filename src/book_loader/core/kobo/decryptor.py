@@ -35,9 +35,13 @@ def _check_decrypted_content(filename: str, contents: bytes) -> None:
             raise ValueError("Invalid JPEG magic bytes")
 
 
-def _safe_filename(title: str) -> str:
-    """Convert a book title to a safe filename."""
+def safe_filename(title: str) -> str:
+    """Convert a book title to a safe filename (public API)."""
     return re.sub(r"[^\s\w]", "_", title, flags=re.UNICODE).strip() + ".epub"
+
+
+# Keep internal compatibility
+_safe_filename = safe_filename
 
 
 class KoboDecryptor:
